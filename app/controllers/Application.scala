@@ -8,7 +8,7 @@ import ws.WebSocketActor
 class Application extends Controller {
 
   def index = Action {
-    Ok(views.html.index())
+    Ok(views.html.index()).withSession()
   }
 
   def ws = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>

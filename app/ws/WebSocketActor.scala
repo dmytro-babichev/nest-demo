@@ -1,54 +1,40 @@
 package ws
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import play.api.Logger
-import play.api.libs.json.JsValue
-import ws.WebSocketActor.login
+import akka.pattern.ask
+import akka.util.Timeout
+import play.api.libs.json.{JsValue, Json}
+import ws.authorization.{AuthorizationActor, Authorized, Unauthorized}
+
+import scala.concurrent.duration._
 
 /**
   * Created by Hedgehog on 31/1/16.
   */
 class WebSocketActor(out: ActorRef) extends Actor with ActorLogging {
+
+  import context.dispatcher
+
   def receive = {
     case msg: JsValue =>
-      val sessionIdOpt = (msg \ "sessionId").asOpt[String]
-      sessionIdOpt match {
-        case None =>
-          login(msg)
-        case Some(sessionId) =>
-          println(s"Session id: $sessionId")
+      val authorizationActor = context.actorOf(Props[AuthorizationActor])
+      implicit val timeout = Timeout(5.seconds)
+      val authorizationStatus = authorizationActor ? msg
+      authorizationStatus map {
+        case Authorized(message, sessionId) =>
+          out ! Json.parse(s"""{"message": "$message", "sessionId": "$sessionId"}""")
+        case Unauthorized(message) => out ! s"{message: $message}"
+        case _ =>
+          log.error("Unexpected response from authorization actor")
+          out ! "Unexpected response from authorization actor"
+      } recover {
+        case e: Exception =>
+          log.error(e, "Unable to process message [{}]", msg.toString())
+          out ! "Error has occurred while processing your request"
       }
   }
 }
 
 object WebSocketActor {
   def props(out: ActorRef) = Props(new WebSocketActor(out))
-
-  def login(msg: JsValue) = {
-    val actionOpt: Option[String] = (msg \ "action").asOpt[String]
-    actionOpt match {
-      case Some(LoginActions.LOGIN) =>
-        val emailOpt = (msg \ "email").asOpt[String]
-        val passwordOpt = (msg \ "password").asOpt[String]
-        emailOpt match {
-          case Some(email) =>
-            passwordOpt match {
-              case Some(password) =>
-                Logger.info(s"Client tries to log in with email: $email and password: $password")
-              case _ =>
-                Logger.error("Missing password")
-            }
-          case _ =>
-            Logger.error("Missing email")
-        }
-      case Some(action) =>
-        Logger.error(s"Not authorized for action: $action")
-      case _ =>
-        Logger.error("Unable to authorize client: empty action.")
-    }
-  }
-}
-
-object LoginActions {
-  val LOGIN = "login"
 }
