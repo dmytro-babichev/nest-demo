@@ -13,11 +13,18 @@ requirejs.config({
         backbone: 'backbone-min',
         underscore: 'underscore-min',
         bootstrap: 'bootstrap.min'
+    },
+    shim: {
+        'bootstrap': {
+            deps: ['jquery']
+        }
     }
 });
 
-requirejs(['jquery', 'backbone', 'underscore', 'bootstrap'], function($, Backbone, _) {
+require(['router/router'], function(Router) {
     //jQuery, canvas and the app/sub module are all
     //loaded and can be used here now.
-    console.log($("body").html())
+    console.log("Nest demo!")
+    window.router = new Router();
+    Backbone.history.start({pushState: true});
 });
