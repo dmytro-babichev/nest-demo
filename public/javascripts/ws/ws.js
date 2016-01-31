@@ -20,6 +20,10 @@ define([], function() {
                 console.log("Received message", receivedMsg);
             };
 
+            ws.sendMessage = function(message) {
+                this.send(JSON.stringify(message));
+            }
+
             return ws;
         }
     };

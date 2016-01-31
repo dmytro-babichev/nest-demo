@@ -1,6 +1,7 @@
 package controllers
 
 import play.api.Play.current
+import play.api.libs.json.JsValue
 import play.api.mvc._
 import ws.WebSocketActor
 
@@ -10,7 +11,7 @@ class Application extends Controller {
     Ok(views.html.index())
   }
 
-  def ws = WebSocket.acceptWithActor[String, String] { request => out =>
+  def ws = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>
     WebSocketActor.props(out)
   }
 }
