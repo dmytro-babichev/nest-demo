@@ -10,7 +10,8 @@ define(['backbone'], function(Backbone) {
             console.log("Model initialized");
         },
         login: function() {
-            console.log("Sending credentials", this.get("email"), this.get("password"));
+            var credentials = JSON.stringify(this);
+            window.ws.send(credentials);
         }
     });
 });

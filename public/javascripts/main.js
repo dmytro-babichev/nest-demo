@@ -21,10 +21,11 @@ requirejs.config({
     }
 });
 
-require(['router/router'], function(Router) {
+require(['router/router', 'ws/ws'], function(Router, WebSocket) {
     //jQuery, canvas and the app/sub module are all
     //loaded and can be used here now.
     console.log("Nest demo!")
     window.router = new Router();
+    window.ws = WebSocket.connect("ws://localhost:9000/connect");
     Backbone.history.start({pushState: true});
 });
