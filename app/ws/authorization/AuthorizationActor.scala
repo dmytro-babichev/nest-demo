@@ -1,12 +1,8 @@
 package ws.authorization
 
-import java.util.UUID
-
 import akka.actor.Actor
 import play.api.Logger
-import play.api.libs.Crypto
 import play.api.libs.json.JsValue
-import ws.authorization.AuthorizationActor.{generateSession, validateSession}
 
 /**
   * Created by Hedgehog on 31/1/16.
@@ -35,7 +31,7 @@ class AuthorizationActor extends Actor {
             passwordOpt match {
               case Some(password) =>
                 Logger.info(s"Client tries to log in with email: [$email] and password: [$password]")
-                val playSession = generateSession()
+                val playSession = Authorization.generateSessionId()
                 Authorized(s"Client with email: [$email] and password: [$password] has been authorized", playSession)
               case _ =>
                 Logger.error(s"Client with email: [$email] has not been authorized. Reason: missing password.")
@@ -55,7 +51,7 @@ class AuthorizationActor extends Actor {
   }
 
   def isAuthorized(sessionId: String) = {
-    if (validateSession(sessionId)) {
+    if (Authorization.validateSessionId(sessionId)) {
       Logger.debug(s"Client's existing sessionId: [$sessionId] is valid.")
       Authorized(s"Client is authorized", sessionId)
     } else {
@@ -65,41 +61,12 @@ class AuthorizationActor extends Actor {
   }
 }
 
-object AuthorizationActor {
-  // Do not change this unless you understand the security issues behind timing attacks.
-  // This method intentionally runs in constant time if the two strings have the same length.
-  // If it didn't, it would be vulnerable to a timing attack.
-  def safeEquals(a: String, b: String) = {
-    if (a.length != b.length) {
-      false
-    } else {
-      var equal = 0
-      for (i <- Array.range(0, a.length)) {
-        equal |= a(i) ^ b(i)
-      }
-      equal == 0
-    }
-  }
-
-  def generateSession() = {
-    val sessionId = s"sessionId=${UUID.randomUUID().toString}"
-    val signedSessionId = Crypto.sign(sessionId)
-    s"$signedSessionId-$sessionId"
-  }
-
-  def validateSession(signedSessionId: String): Boolean = {
-    val splitted: Array[String] = signedSessionId.split("-", 2)
-    val sessionId: String = splitted.tail.mkString("")
-    safeEquals(splitted.head, Crypto.sign(sessionId))
-  }
-}
-
 object LoginActions {
   val LOGIN = "login"
 }
 
-class AuthorizationStatus
+class AuthorizationStatus(message: String)
 
-case class Authorized(message: String, sessionId: String) extends AuthorizationStatus {}
+case class Authorized(message: String, sessionId: String) extends AuthorizationStatus(message) {}
 
-case class Unauthorized(message: String = "Client is not authorized") extends AuthorizationStatus {}
+case class Unauthorized(message: String = "Client is not authorized") extends AuthorizationStatus(message) {}

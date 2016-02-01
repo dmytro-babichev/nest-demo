@@ -7,7 +7,6 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Ba
         },
 
         login: function() {
-            console.log("Router initialized!");
             var loginModel = new LoginModel();
             var loginView = new LoginView({model: loginModel});
             $("body").html(loginView.render().el);

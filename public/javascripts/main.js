@@ -24,8 +24,13 @@ requirejs.config({
 require(['router/router', 'ws/ws'], function(Router, WebSocket) {
     //jQuery, canvas and the app/sub module are all
     //loaded and can be used here now.
-    console.log("Nest demo!")
     window.router = new Router();
     window.ws = WebSocket.connect("ws://localhost:9000/connect");
+    window.ws.addHandler({handle: function(response) {
+        if (response.status === 200 && response.sessionId !== undefined && response.sessionId !== null) {
+            localStorage.setItem("sessionId", response.sessionId);
+            return true;
+        }
+    }});
     Backbone.history.start({pushState: true});
 });
