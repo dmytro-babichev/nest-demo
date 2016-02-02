@@ -21,16 +21,11 @@ requirejs.config({
     }
 });
 
-require(['router/router', 'ws/ws'], function(Router, WebSocket) {
+require(['router/router', 'ws/ws', 'ws/handler/authorizationHandler'], function(Router, WebSocket, AuthorizationHandler) {
     //jQuery, canvas and the app/sub module are all
     //loaded and can be used here now.
-    window.router = new Router();
     window.ws = WebSocket.connect("ws://localhost:9000/connect");
-    window.ws.addHandler({handle: function(response) {
-        if (response.status === 200 && response.sessionId !== undefined && response.sessionId !== null) {
-            localStorage.setItem("sessionId", response.sessionId);
-            return true;
-        }
-    }});
-    Backbone.history.start({pushState: true});
+    window.ws.addHandler(AuthorizationHandler);
+    window.router = new Router();
+    Backbone.history.start({hashChange: true});
 });

@@ -5,7 +5,9 @@ import play.api.Logger
 import play.api.libs.json.JsValue
 
 /**
-  * Created by Hedgehog on 31/1/16.
+  * Created with IntelliJ IDEA.
+  * User: Dmytro_Babichev
+  * Date: 31/1/16.
   */
 class AuthorizationActor extends Actor {
 
@@ -31,8 +33,8 @@ class AuthorizationActor extends Actor {
             passwordOpt match {
               case Some(password) =>
                 Logger.info(s"Client tries to log in with email: [$email] and password: [$password]")
-                val playSession = Authorization.generateSessionId()
-                Authorized(s"Client with email: [$email] and password: [$password] has been authorized", playSession)
+                val sessionId = Authorization.generateSessionId()
+                Authorized(s"Client with email: [$email] and password: [$password] has been authorized", sessionId)
               case _ =>
                 Logger.error(s"Client with email: [$email] has not been authorized. Reason: missing password.")
                 Unauthorized

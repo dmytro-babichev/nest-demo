@@ -1,12 +1,13 @@
-define(['backbone'], function(Backbone) {
+define(['backbone', 'underscore'], function(Backbone, _) {
 
     return Backbone.Model.extend({
         defaults: {
             email: "",
-            password: ""
+            password: "",
+            sessionId: ""
         },
         login: function() {
-            var credentials = {email: this.get("email"), password: this.get("password"), action: "login"};
+            var credentials = _.extend(this.toJSON(), {"action": "login"})
             window.ws.sendMessage(credentials);
         }
     });

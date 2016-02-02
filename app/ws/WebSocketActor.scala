@@ -9,7 +9,9 @@ import ws.authorization.{AuthorizationActor, Authorized, Unauthorized}
 import scala.concurrent.duration._
 
 /**
-  * Created by Hedgehog on 31/1/16.
+  * Created with IntelliJ IDEA.
+  * User: Dmytro_Babichev
+  * Date: 31/1/16.
   */
 class WebSocketActor(out: ActorRef) extends Actor with ActorLogging {
 

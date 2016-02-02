@@ -5,14 +5,21 @@ define(['underscore'], function(_) {
             // Let us open a web socket
             var ws = new WebSocket(url);
             var handlers = [];
+            var isOpen = false;
+            var delayedMessages = [];
 
             ws.onopen = function() {
                 // Web Socket is connected
                 console.log("Web socket is opened");
+                isOpen = true;
+                _.each(delayedMessages, function(message) {
+                    this.send(message);
+                }, this);
+                delayedMessages = [];
             };
 
             ws.onclose = function() {
-                // Web Socket is connected
+                // Web Socket is closed
                 console.log("Web socket is closed");
             };
 
@@ -25,7 +32,12 @@ define(['underscore'], function(_) {
 
             ws.sendMessage = function(message) {
                 var richMsg = _.extend(message, {"sessionId": localStorage.getItem("sessionId")});
-                this.send(JSON.stringify(richMsg));
+                var richMsgStr = JSON.stringify(richMsg);
+                if (isOpen === true) {
+                    this.send(richMsgStr);
+                } else {
+                    delayedMessages.push(richMsgStr); // web socket is still in CONNECTING state, but we already send messages via it
+                }
             }
 
             ws.addHandler = function(handler) {
