@@ -10,7 +10,8 @@ libraryDependencies ++= Seq(
   jdbc,
   cache,
   ws,
-  specs2 % Test
+  specs2 % Test,
+  evolutions
 )
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"

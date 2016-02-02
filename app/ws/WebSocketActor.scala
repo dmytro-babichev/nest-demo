@@ -24,7 +24,8 @@ class WebSocketActor(out: ActorRef) extends Actor with ActorLogging {
       val authorizationStatus = authorizationActor ? msg
       authorizationStatus map {
         case Authorized(message, sessionId) =>
-          out ! Json.obj("message" -> message, "sessionId" -> sessionId, "status" -> 200)
+          val email = (msg \ "email").as[String]
+          out ! Json.obj("message" -> message, "sessionId" -> sessionId, "status" -> 200, "email" -> email)
         case Unauthorized(message) =>
           out ! Json.obj("message" -> message, "status" -> 403)
         case resp =>

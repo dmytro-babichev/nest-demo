@@ -30,7 +30,7 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Ba
         },
 
         main: function() {
-            this.currentView.remove();
+            if (this.currentView !== null) this.currentView.remove();
         },
 
         loggedIn: function() {
