@@ -37,18 +37,18 @@ class AuthorizationActor extends Actor {
                 Authorized(s"Client with email: [$email] and password: [$password] has been authorized", sessionId)
               case _ =>
                 Logger.error(s"Client with email: [$email] has not been authorized. Reason: missing password.")
-                Unauthorized
+                Unauthorized()
             }
           case _ =>
             Logger.error(s"Client has not been authorized. Reason: missing email.")
-            Unauthorized
+            Unauthorized()
         }
       case Some(action) =>
         Logger.error(s"Client: [${emailOpt.getOrElse("unknown")}] is not authorized for action: [$action]")
-        Unauthorized
+        Unauthorized()
       case _ =>
         Logger.error(s"Unable to authorize client: [${emailOpt.getOrElse("unknown")}]. Reason: empty action.")
-        Unauthorized
+        Unauthorized()
     }
   }
 
@@ -58,7 +58,7 @@ class AuthorizationActor extends Actor {
       Authorized(s"Client is authorized", sessionId)
     } else {
       Logger.error(s"Client's sessionId: [$sessionId] is not valid.")
-      Unauthorized
+      Unauthorized()
     }
   }
 }
@@ -71,4 +71,6 @@ class AuthorizationStatus(message: String)
 
 case class Authorized(message: String, sessionId: String) extends AuthorizationStatus(message) {}
 
-case class Unauthorized(message: String = "Client is not authorized") extends AuthorizationStatus(message) {}
+case class Unauthorized(message: String = "Client is not authorized") extends AuthorizationStatus(message) {
+  override def toString: String = message
+}

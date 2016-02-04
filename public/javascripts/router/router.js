@@ -3,8 +3,9 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Ba
     return Backbone.Router.extend({
 
         routes: {
-            ""      : "login",
-            "main"  : "main"
+            ""           : "login",
+            "login"      : "login",
+            "main"       : "main"
         },
 
         execute: function(callback, args, name) {
@@ -17,9 +18,9 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Ba
         },
 
         login: function() {
-            var sessionId = localStorage.getItem("sessionId");
             var loginModel;
             if (this.loggedIn()) {
+                var sessionId = localStorage.getItem("sessionId");
                 loginModel = new LoginModel({sessionId: sessionId});
                 loginModel.login();
             } else {

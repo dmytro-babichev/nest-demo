@@ -8,7 +8,9 @@ define([], function () {
                 return true;
             } else {
                 localStorage.removeItem("sessionId");
-                window.router.navigate("", {trigger: true, replace: true});
+                localStorage.removeItem("email");
+                window.router.navigate("", {trigger: false, replace: true});
+                window.router.login();
                 return false;
             }
         }
