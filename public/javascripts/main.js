@@ -21,11 +21,29 @@ requirejs.config({
     }
 });
 
-require(['router/router', 'ws/ws', 'ws/handler/authorizationHandler'], function(Router, WebSocket, AuthorizationHandler) {
+require(['jquery', 'backbone', 'router/router', 'ws/ws', 'ws/handler/authorizationHandler'], function($, Backbone, Router, WebSocket, AuthorizationHandler) {
     //jQuery, canvas and the app/sub module are all
     //loaded and can be used here now.
     window.ws = WebSocket.connect("ws://localhost:9000/connect");
     window.ws.addHandler(AuthorizationHandler);
     window.router = new Router();
     Backbone.history.start({hashChange: true});
+
+    window.showErrorMessage = function(msg) {
+        showMessage($("div.alert-danger"), msg);
+    };
+
+    window.showSuccessMessage = function(msg) {
+        showMessage($("div.alert-success"), msg);
+    };
+
+    function showMessage(element, msg) {
+        if (msg !== undefined && msg !== null) {
+            element.show().find("span.msgText").text(msg);
+            setTimeout(function() {
+                element.fadeOut('fast');
+            }, 5000);
+        }
+    }
+
 });

@@ -1,4 +1,4 @@
-define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Backbone, $, LoginModel, LoginView) {
+define(['backbone', 'jquery', 'model/loginModel', 'view/containerView', 'view/loginView'], function(Backbone, $, LoginModel, ContainerView, LoginView) {
 
     return Backbone.Router.extend({
 
@@ -6,6 +6,12 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Ba
             ""           : "login",
             "login"      : "login",
             "main"       : "main"
+        },
+
+        initialize: function() {
+            var containerView = new ContainerView();
+            this.basicView = containerView;
+            this.switchView(containerView, $("body"));
         },
 
         execute: function(callback, args, name) {
@@ -26,12 +32,13 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Ba
             } else {
                 loginModel = new LoginModel();
                 var loginView = new LoginView({model: loginModel});
-                this.switchView(loginView, $("body"));
+                this.switchView(loginView, $("#bodyContent"));
             }
         },
 
         main: function() {
-            if (this.currentView !== null) this.currentView.remove();
+//            if (this.currentView !== null) this.currentView.remove();
+            this.basicView.loggedMode();
         },
 
         loggedIn: function() {
@@ -39,10 +46,11 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/loginView'], function(Ba
             return sessionId !== undefined && sessionId !== null;
         },
 
+        basicView: null,
         currentView: null,
 
         switchView: function(newView, targetElement) {
-            if (this.currentView !== null) {
+            if (this.currentView !== null && this.currentView !== this.basicView) {
                 this.currentView.remove();
             }
             newView.render();

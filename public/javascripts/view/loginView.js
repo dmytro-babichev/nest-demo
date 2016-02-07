@@ -7,7 +7,8 @@ define(['backbone', 'underscore', 'text!../../template/login.html'], function(Ba
         template: _.template(loginTemplate),
 
         events: {
-            "click #loginBtn": "handleLogin"
+            "click #loginBtn": "handleLogin",
+            "click #registerBtn": "handleRegister"
         },
 
         render: function() {
@@ -16,10 +17,19 @@ define(['backbone', 'underscore', 'text!../../template/login.html'], function(Ba
         },
 
         handleLogin: function() {
+            this.updateModel()
+            this.model.login();
+        },
+
+        handleRegister: function() {
+            this.updateModel()
+            this.model.register();
+        },
+
+        updateModel: function() {
             var email = this.$("#inputEmail").val();
             var password = this.$("#inputPassword").val();
             this.model.set({email: email, password: password});
-            this.model.login();
         }
 
     });

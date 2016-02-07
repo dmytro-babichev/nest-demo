@@ -1,6 +1,6 @@
 package dao
 
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{Actor, ActorLogging}
 import akka.pattern.pipe
 import dao.UserDAOImpl.users
 import models.{User, Users}
@@ -19,18 +19,18 @@ import scala.concurrent.Future
   * Date: 02/2/16
   * Time: 11:17 PM
   */
-class UserDAOImpl extends Actor with UserDAO with ActorLogging{
+class UserDAOImpl extends Actor with UserDAO with ActorLogging {
 
-  override def addUser(email: String, password: String) = {
+  override def addUser(email: String, password: String): Future[Option[User]] = {
     val user = User(None, email, password)
     val futureInsert = UserDAOImpl.dbConfig.db.run(
-      users.filter(_.email === email).exists.result.flatMap(exists =>
-        if (exists) {
+      users.filter(_.email === email).exists.result.flatMap(exists => {
+        if (!exists) {
           users returning users.map(_.id) += user
         } else {
           DBIO.failed(new IllegalStateException(s"User with email: [$email] already exists"))
         }
-      )
+      })
     )
     futureInsert.map(id =>
       Some(User(Some(id), email, password))
@@ -55,8 +55,14 @@ class UserDAOImpl extends Actor with UserDAO with ActorLogging{
   }
 
   override def receive: Receive = {
-    case GetUser(email) =>
-      getUser(email) pipeTo sender()
+    case msg: UserOperation =>
+      val futureUser: Future[Option[User]] = msg match {
+        case GetUser(email) =>
+          getUser(email)
+        case AddUser(email, password) =>
+          addUser(email, password)
+      }
+      futureUser pipeTo sender()
   }
 }
 
@@ -73,5 +79,8 @@ trait UserDAO {
   def getUser(email: String): Future[Option[User]]
 }
 
-case class GetUser(email: String)
-case class AddUser(email: String, password: String)
+class UserOperation()
+
+case class GetUser(email: String) extends UserOperation
+
+case class AddUser(email: String, password: String) extends UserOperation
