@@ -7,6 +7,7 @@ define([], function () {
                 window.router.navigate("main", {trigger: true, replace: true});
                 return true;
             } else {
+                console.log(response)
                 localStorage.removeItem("sessionId");
                 localStorage.removeItem("email");
                 window.router.navigate("", {trigger: false, replace: true});

@@ -1,5 +1,7 @@
 package dao
 
+import akka.actor.{ActorLogging, Actor}
+import akka.pattern.pipe
 import dao.UserDAOImpl.users
 import models.{User, Users}
 import play.api.Play
@@ -17,7 +19,7 @@ import scala.concurrent.Future
   * Date: 02/2/16
   * Time: 11:17 PM
   */
-class UserDAOImpl extends UserDAO {
+class UserDAOImpl extends Actor with UserDAO with ActorLogging{
 
   override def addUser(email: String, password: String) = {
     val user = User(None, email, password)
@@ -31,15 +33,30 @@ class UserDAOImpl extends UserDAO {
       )
     )
     futureInsert.map(id =>
-      User(Some(id), email, password)
-    )
+      Some(User(Some(id), email, password))
+    ).recover({
+      case e: Exception =>
+        log.error(e, "Unable to save user with email: [{}] and password: [{}]", email, password)
+        None
+    })
   }
 
   override def getUser(email: String): Future[Option[User]] = {
     val futureSelect: Future[Seq[User]] = UserDAOImpl.dbConfig.db.run(
       users.filter(_.email === email).take(1).result
     )
-    futureSelect.map(users => Option(users.head))
+    futureSelect.map(users => {
+      if (users.isEmpty) None else Option(users.head)
+    }).recover({
+      case e: Exception =>
+        log.error(e, "Unable to get user with email: [{}]", email)
+        None
+    })
+  }
+
+  override def receive: Receive = {
+    case GetUser(email) =>
+      getUser(email) pipeTo sender()
   }
 }
 
@@ -51,7 +68,10 @@ object UserDAOImpl {
 
 trait UserDAO {
 
-  def addUser(email: String, password: String): Future[User]
+  def addUser(email: String, password: String): Future[Option[User]]
 
   def getUser(email: String): Future[Option[User]]
 }
+
+case class GetUser(email: String)
+case class AddUser(email: String, password: String)
