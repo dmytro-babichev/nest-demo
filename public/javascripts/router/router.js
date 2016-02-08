@@ -17,8 +17,11 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/containerView', 'view/lo
         execute: function(callback, args, name) {
             if (!this.loggedIn()) {
                 this.navigate("", {trigger: false, replace: false});
+                this.basicView.notLoggedMode();
                 this.login();
                 return false;
+            } else {
+                this.basicView.loggedMode();
             }
             if (callback) callback.apply(this, args);
         },
@@ -37,8 +40,7 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/containerView', 'view/lo
         },
 
         main: function() {
-//            if (this.currentView !== null) this.currentView.remove();
-            this.basicView.loggedMode();
+            this.switchView(new Backbone.View(), $("#bodyContent"))
         },
 
         loggedIn: function() {
