@@ -1,9 +1,9 @@
 package controllers
 
+import actors.WebSocketActor
 import play.api.Play.current
 import play.api.libs.json.JsValue
 import play.api.mvc._
-import ws.WebSocketActor
 
 class Application extends Controller {
 

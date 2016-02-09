@@ -1,17 +1,30 @@
-define(['backbone', 'jquery', 'text!../../template/container.html'], function(Backbone, $, containerTemplate) {
-    return Backbone.View.extend({
-            template: _.template(containerTemplate),
+define(['backbone', 'jquery', 'underscore', 'text!../../template/container.html', 'text!../../template/navbarLoggedMode.html'],
+    function(Backbone, $, _, containerTemplate, navbarLoggedMode) {
+        return Backbone.View.extend({
+                template: _.template(containerTemplate),
 
-            events: {
-            },
+                events: {
+                    "click #logoutBtn" : "logout"
+                },
 
-            render: function() {
-                this.$el.html(this.template(this.model));
-                return this;
-            },
+                render: function() {
+                    this.$el.html(this.template(this.model));
+                    return this;
+                },
 
-            loggedMode() {
-                $(".navbar > .container-fluid").append('<ul class="nav navbar-nav navbar-right"><li><a>' + localStorage.getItem("email") + '</a></li></div>');
-            }
-        });
-});
+                loggedMode: function() {
+                    $(".navbar > .container-fluid").html(_.template(navbarLoggedMode)({email: localStorage.getItem("email")}));
+                },
+
+                notLoggedMode: function() {
+                    $(".navbar > .container-fluid > .navbar-collapse").remove();
+                },
+
+                logout: function() {
+                    localStorage.removeItem("email");
+                    localStorage.removeItem("sessionId");
+                    window.router.navigate("", {trigger: true, replace: true});
+                }
+            });
+    }
+);

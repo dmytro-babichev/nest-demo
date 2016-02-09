@@ -1,4 +1,4 @@
-package ws.authorization
+package utils
 
 import java.util.UUID
 
