@@ -1,17 +1,20 @@
 package controllers
 
+import javax.inject.Inject
+
 import actors.WebSocketActor
+import play.api.Configuration
 import play.api.Play.current
 import play.api.libs.json.JsValue
 import play.api.mvc._
 
-class Application extends Controller {
+class Application @Inject() (config: Configuration) extends Controller {
 
   def index = Action {
     Ok(views.html.index()).withSession()
   }
 
   def ws = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>
-    WebSocketActor.props(out)
+    WebSocketActor.props(out, config)
   }
 }

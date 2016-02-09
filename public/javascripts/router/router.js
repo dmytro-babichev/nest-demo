@@ -41,6 +41,7 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/containerView', 'view/lo
 
         main: function() {
             this.switchView(new Backbone.View(), $("#bodyContent"))
+            window.ws.sendMessage({action: "web_cam"});
         },
 
         loggedIn: function() {
