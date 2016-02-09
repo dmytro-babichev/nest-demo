@@ -1,8 +1,8 @@
-package ws
+package actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import play.api.libs.json.{JsValue, Json}
-import ws.authorization.{AuthorizedFor, AuthorizationActor, Authorized, Unauthorized}
+import actors.authorization.{AuthorizationActor, Authorized, AuthorizedFor, Unauthorized}
 
 /**
   * Created with IntelliJ IDEA.

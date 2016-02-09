@@ -12,7 +12,8 @@ libraryDependencies ++= Seq(
   specs2 % Test,
   "com.typesafe.play" %% "play-slick" % "1.1.1",
   "com.typesafe.play" %% "play-slick-evolutions" % "1.1.1",
-  "com.h2database" % "h2" % h2Version
+  "com.h2database" % "h2" % h2Version,
+  "com.firebase" % "firebase-client" % "1.0.18"
 )
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"

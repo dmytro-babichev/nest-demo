@@ -1,4 +1,4 @@
-package ws.authorization
+package actors.authorization
 
 import java.util.concurrent.TimeUnit
 
@@ -8,6 +8,7 @@ import akka.util.Timeout
 import dao.{AddUser, GetUser, UserDAOImpl}
 import models.User
 import play.api.libs.json.JsValue
+import utils.Authorization
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -101,17 +102,6 @@ class AuthorizationActor extends Actor with ActorLogging {
   }
 }
 
-object LoginActions {
-  val LOGIN = "login"
-  val REGISTER = "register"
-}
 
-class AuthorizationStatus(email: String, message: String)
 
-case class Authorized(message: String, email: String, sessionId: String) extends AuthorizationStatus(message, email) {}
 
-case class AuthorizedFor(msg: JsValue, sessionId: String) {}
-
-case class Unauthorized(message: String = "Client is not authorized", email: String = "") extends AuthorizationStatus(message, email) {
-  override def toString: String = message
-}
