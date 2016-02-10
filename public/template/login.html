@@ -8,9 +8,17 @@
 <div class="form-signin">
     <h2 class="form-signin-heading">Please sign in</h2>
     <label for="inputEmail" class="sr-only">Email address</label>
-    <input type="email" id="inputEmail" class="form-control" placeholder="Email address" required="" autofocus="">
-    <label for="inputPassword" class="sr-only">Secret token</label>
-    <input type="password" id="inputPassword" class="form-control" placeholder="Token" required="">
+    <input type="email" id="inputEmail" class="form-control top" placeholder="Email address" required="" autofocus="">
+    <label for="inputPassword" class="sr-only">Password</label>
+    <input type="password" id="inputPassword" class="form-control bottom" placeholder="Password" required="">
     <button class="btn btn-lg btn-primary btn-block" id="loginBtn">Sign in</button>
-    <button class="btn btn-lg btn-success btn-block" id="registerBtn">Register</button>
+    <button class="btn btn-lg btn-default btn-block" id="toggleRegBtn">Registration</button>
+    <br>
+    <span class="nest-details" style="display: none;">
+        <label for="inputProductId" class="sr-only">Product ID</label>
+        <input type="password" id="inputProductId" class="form-control top" placeholder="Product ID" required="">
+        <label for="inputProductSecret" class="sr-only">Product Secret</label>
+        <input type="password" id="inputProductSecret" class="form-control bottom" placeholder="Product Secret" required="">
+        <button class="btn btn-lg btn-success btn-block" id="registerBtn">Register</button>
+    </span>
 </div>
