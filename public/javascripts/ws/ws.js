@@ -25,8 +25,9 @@ define(['underscore'], function(_) {
 
             ws.onmessage = function(evt) {
                 var receivedMsg = JSON.parse(evt.data);
+                console.log("WS. Received message: ", receivedMsg)
                 _.find(handlers, function(handler) {
-                    return handler.handle(receivedMsg);
+                    return !handler.handle(receivedMsg);
                 });
             };
 
@@ -35,6 +36,7 @@ define(['underscore'], function(_) {
                 var richMsgStr = JSON.stringify(richMsg);
                 if (isOpen === true) {
                     this.send(richMsgStr);
+                    console.log("WS. Sending message: ", richMsg)
                 } else {
                     delayedMessages.push(richMsgStr); // web socket is still in CONNECTING state, but we already send messages via it
                 }

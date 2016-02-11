@@ -8,7 +8,7 @@ import akka.util.Timeout
 import dao.{AddUser, GetUser, UserDAOImpl}
 import models.User
 import play.api.libs.json.JsValue
-import utils.Authorization
+import utils.Security
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -50,8 +50,15 @@ class AuthorizationActor extends Actor with ActorLogging {
           val user: Future[AuthorizationStatus] = checkUser(email, password)
           pipe(user).to(sender)
         case LoginActions.REGISTER =>
-          val user: Future[AuthorizationStatus] = registerUser(email, password)
-          pipe(user).to(sender)
+          val productId: String = (msg \ "productId").asOpt[String].getOrElse(UNDEFINED)
+          val productSecret: String = (msg \ "productSecret").asOpt[String].getOrElse(UNDEFINED)
+          if (productId == UNDEFINED || productSecret == UNDEFINED) {
+            log.error("Unable to register client: [{}]. Reason: empty product id or product secret.", email)
+            sender ! Unauthorized("Empty product id or product secret", email)
+          } else {
+            val user: Future[AuthorizationStatus] = registerUser(email, password, productId, productSecret)
+            pipe(user).to(sender)
+          }
         case _ =>
           log.error("Unable to authorize client: [{}]. Reason: wrong action: [{}].", email, action)
           sender ! Unauthorized(email = email)
@@ -60,7 +67,7 @@ class AuthorizationActor extends Actor with ActorLogging {
   }
 
   def isAuthorized(sessionId: String, msg: JsValue) = {
-    if (Authorization.validateSessionId(sessionId)) {
+    if (Security.validateSignature(sessionId)) {
       log.debug("Client's existing sessionId: [{}] is valid.", sessionId)
       AuthorizedFor(msg, sessionId)
     } else {
@@ -77,7 +84,7 @@ class AuthorizationActor extends Actor with ActorLogging {
       case Some(user: User) =>
         if (user.password == password) {
           log.info("Client has been authorized successfully with email: [{}] and password: [{}]", email, password)
-          val sessionId = Authorization.generateSessionId()
+          val sessionId = Security.generateSessionId()
           Authorized(s"Client with email: [$email] and password: [$password] has been authorized", email, sessionId)
         } else {
           Unauthorized(s"Client with email: [$email] and password: [$password] has not been authorized. Wrong email or password", email)
@@ -87,21 +94,17 @@ class AuthorizationActor extends Actor with ActorLogging {
     }
   }
 
-  def registerUser(email: String, password: String) = {
+  def registerUser(email: String, password: String, productId: String, productSecret: String) = {
     log.info("Client tries to register with email: [{}] and password: [{}]", email, password)
     val userDao = context.actorOf(Props[UserDAOImpl])
-    val futureUser = userDao ? AddUser(email, password)
+    val futureUser = userDao ? AddUser(email, password, productId, productSecret)
     futureUser.map {
       case Some(user: User) =>
         log.info("Client has been registered successfully with email: [{}] and password: [{}]", email, password)
-        val sessionId = Authorization.generateSessionId()
+        val sessionId = Security.generateSessionId()
         Authorized(s"Client with email: [$email] and password: [$password] has been registered", email, sessionId)
       case _ =>
         Unauthorized("Client has not been registered", email = email)
     }
   }
 }
-
-
-
-

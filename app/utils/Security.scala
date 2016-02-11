@@ -10,7 +10,7 @@ import play.api.libs.Crypto
   * Date: 2/1/2016
   * Time: 11:39 AM
   */
-object Authorization {
+object Security {
   // Do not change this unless you understand the security issues behind timing attacks.
   // This method intentionally runs in constant time if the two strings have the same length.
   // If it didn't, it would be vulnerable to a timing attack.
@@ -27,14 +27,26 @@ object Authorization {
   }
 
   def generateSessionId() = {
-    val sessionId = s"sessionId=${UUID.randomUUID().toString}"
-    val signedSessionId = Crypto.sign(sessionId)
-    s"$signedSessionId-$sessionId"
+    sign("sessionId", UUID.randomUUID().toString)
   }
 
-  def validateSessionId(signedSessionId: String): Boolean = {
-    val splitted: Array[String] = signedSessionId.split("-", 2)
-    val sessionId: String = splitted.tail.mkString("")
-    safeEquals(splitted.head, Crypto.sign(sessionId))
+  def validateSignature(signedValue: String): Boolean = {
+    val split = signedValue.split("-", 2)
+    val pair = split.tail.mkString("")
+    safeEquals(split.head, Crypto.sign(pair))
+  }
+
+  def sign(key: String, value: String) = {
+    val pair = s"$key=$value"
+    s"${Crypto.sign(pair)}-$pair"
+  }
+
+  def getValue(signature: String, key: String) = {
+    if (validateSignature(signature)) {
+      val split = signature.split("-", 2)
+      val pair = split.tail.mkString("").split(key.concat("="), 2)
+      Option(pair.tail.mkString(""))
+    } else
+      None
   }
 }

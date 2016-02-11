@@ -9,7 +9,7 @@ import slick.driver.H2Driver.api._
   * Time: 11:29 PM
   */
 
-case class User(id: Option[Long], email: String, password: String)
+case class User(id: Option[Long], email: String, password: String, productId: String, productSecret: String)
 
 class Users(tag: Tag) extends Table[User](tag, "User") {
 
@@ -19,5 +19,9 @@ class Users(tag: Tag) extends Table[User](tag, "User") {
 
   def password = column[String]("password")
 
-  def * = (id.?, email, password) <> (User.tupled, User.unapply)
+  def productId = column[String]("productId")
+
+  def productSecret = column[String]("productSecret")
+
+  def * = (id.?, email, password, productId, productSecret) <> (User.tupled, User.unapply)
 }

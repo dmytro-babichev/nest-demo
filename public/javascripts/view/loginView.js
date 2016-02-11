@@ -34,9 +34,9 @@ define(['backbone', 'underscore', 'text!../../template/login.html'], function(Ba
         updateModel: function() {
             var email = this.$("#inputEmail").val();
             var password = this.$("#inputPassword").val();
-            var password = this.$("#inputProductId").val();
-            var password = this.$("#inputProductSecret").val();
-            this.model.set({email: email, password: password});
+            var productId = this.$("#inputProductId").val();
+            var productSecret = this.$("#inputProductSecret").val();
+            this.model.set({email: email, password: password, productId: productId, productSecret: productSecret});
         }
 
     });

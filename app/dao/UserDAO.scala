@@ -21,8 +21,8 @@ import scala.concurrent.Future
   */
 class UserDAOImpl extends Actor with UserDAO with ActorLogging {
 
-  override def addUser(email: String, password: String): Future[Option[User]] = {
-    val user = User(None, email, password)
+  override def addUser(email: String, password: String, productId: String, productSecret: String): Future[Option[User]] = {
+    val user = User(None, email, password, productId, productSecret)
     val futureInsert = UserDAOImpl.dbConfig.db.run(
       users.filter(_.email === email).exists.result.flatMap(exists => {
         if (!exists) {
@@ -33,7 +33,7 @@ class UserDAOImpl extends Actor with UserDAO with ActorLogging {
       })
     )
     futureInsert.map(id =>
-      Some(User(Some(id), email, password))
+      Some(User(Some(id), email, password, productId, productSecret))
     ).recover({
       case e: Exception =>
         log.error(e, "Unable to save user with email: [{}] and password: [{}]", email, password)
@@ -59,8 +59,8 @@ class UserDAOImpl extends Actor with UserDAO with ActorLogging {
       val futureUser: Future[Option[User]] = msg match {
         case GetUser(email) =>
           getUser(email)
-        case AddUser(email, password) =>
-          addUser(email, password)
+        case AddUser(email, password, productId, productSecret) =>
+          addUser(email, password, productId, productSecret)
       }
       futureUser pipeTo sender()
   }
@@ -74,7 +74,7 @@ object UserDAOImpl {
 
 trait UserDAO {
 
-  def addUser(email: String, password: String): Future[Option[User]]
+  def addUser(email: String, password: String, productId: String, productSecret: String): Future[Option[User]]
 
   def getUser(email: String): Future[Option[User]]
 }
@@ -83,4 +83,4 @@ class UserOperation()
 
 case class GetUser(email: String) extends UserOperation
 
-case class AddUser(email: String, password: String) extends UserOperation
+case class AddUser(email: String, password: String, productId: String, productSecret: String) extends UserOperation

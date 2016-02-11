@@ -3,12 +3,13 @@ define([], function () {
     function getUrlVar(name) {
         var vars = [], hash;
         var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-        for(var i = 0; i < hashes.length; i++) {
+        for (var i = 0; i < hashes.length; i++) {
             hash = hashes[i].split('=');
             vars.push(hash[0]);
             vars[hash[0]] = hash[1];
         }
-        return vars[name].split("#")[0];
+        var urlVar = vars[name];
+        return urlVar !== undefined && urlVar !== null ? urlVar.split("#")[0] : urlVar;
     }
 
     return {
@@ -23,9 +24,7 @@ define([], function () {
                 return true;
             } else {
                 window.showErrorMessage(response.message);
-                localStorage.removeItem("sessionId");
-                localStorage.removeItem("email");
-                localStorage.removeItem("code");
+                localStorage.clear();
                 window.router.navigate("", {trigger: false, replace: true});
                 window.router.login();
                 return false;
