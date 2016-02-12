@@ -25,33 +25,33 @@ class UserDAOImpl extends Actor with UserDAO with ActorLogging {
     val user = User(None, email, password, productId, productSecret)
     val futureInsert = UserDAOImpl.dbConfig.db.run(
       users.filter(_.email === email).exists.result.flatMap(exists => {
-        if (!exists) {
-          users returning users.map(_.id) += user
-        } else {
+        if (exists) {
           DBIO.failed(new IllegalStateException(s"User with email: [$email] already exists"))
+        } else {
+          users returning users.map(_.id) += user
         }
       })
     )
-    futureInsert.map(id =>
-      Some(User(Some(id), email, password, productId, productSecret))
-    ).recover({
-      case e: Exception =>
-        log.error(e, "Unable to save user with email: [{}] and password: [{}]", email, password)
-        None
-    })
+    futureInsert
+      .map(id => Some(User(Some(id), email, password, productId, productSecret)))
+      .recover {
+        case e: Exception =>
+          log.error(e, "Unable to save user with email: [{}] and password: [{}]", email, password)
+          None
+      }
   }
 
   override def getUser(email: String): Future[Option[User]] = {
     val futureSelect: Future[Seq[User]] = UserDAOImpl.dbConfig.db.run(
       users.filter(_.email === email).take(1).result
     )
-    futureSelect.map(users => {
-      if (users.isEmpty) None else Option(users.head)
-    }).recover({
-      case e: Exception =>
-        log.error(e, "Unable to get user with email: [{}]", email)
-        None
-    })
+    futureSelect
+      .map(users => if (users.isEmpty) None else Option(users.head))
+      .recover {
+        case e: Exception =>
+          log.error(e, "Unable to get user with email: [{}]", email)
+          None
+      }
   }
 
   override def receive: Receive = {

@@ -29,6 +29,7 @@ define([], function () {
                 window.router.login();
                 return false;
             }
-        }
+        },
+        name: "authorizationHandler"
     };
 });

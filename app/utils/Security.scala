@@ -44,9 +44,8 @@ object Security {
   def getValue(signature: String, key: String) = {
     if (validateSignature(signature)) {
       val split = signature.split("-", 2)
-      val pair = split.tail.mkString("").split(key.concat("="), 2)
+      val pair = split.tail.mkString("").split(key + "=", 2)
       Option(pair.tail.mkString(""))
-    } else
-      None
+    } else None
   }
 }

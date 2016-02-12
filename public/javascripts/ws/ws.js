@@ -4,7 +4,7 @@ define(['underscore'], function(_) {
         connect: function(url) {
             // Let us open a web socket
             var ws = new WebSocket(url);
-            var handlers = [];
+            var handlers = {};
             var isOpen = false;
             var delayedMessages = [];
 
@@ -14,7 +14,8 @@ define(['underscore'], function(_) {
                 isOpen = true;
                 _.each(delayedMessages, function(message) {
                     this.send(message);
-                }, this);
+                    console.log("WS. Sending message: ", message)
+                }, ws);
                 delayedMessages = [];
             };
 
@@ -25,7 +26,7 @@ define(['underscore'], function(_) {
 
             ws.onmessage = function(evt) {
                 var receivedMsg = JSON.parse(evt.data);
-                console.log("WS. Received message: ", receivedMsg)
+                console.log("WS. Received message: ", receivedMsg);
                 _.find(handlers, function(handler) {
                     return !handler.handle(receivedMsg);
                 });
@@ -35,16 +36,16 @@ define(['underscore'], function(_) {
                 var richMsg = _.extend(message, {"sessionId": localStorage.getItem("sessionId")});
                 var richMsgStr = JSON.stringify(richMsg);
                 if (isOpen === true) {
-                    this.send(richMsgStr);
-                    console.log("WS. Sending message: ", richMsg)
+                    ws.send(richMsgStr);
+                    console.log("WS. Sending message: ", richMsg);
                 } else {
                     delayedMessages.push(richMsgStr); // web socket is still in CONNECTING state, but we already send messages via it
                 }
-            }
+            };
 
             ws.addHandler = function(handler) {
-                handlers.push(handler);
-            }
+                handlers[handler.name] = handler;
+            };
 
             return ws;
         }

@@ -8,6 +8,7 @@ import akka.util.Timeout
 import dao.{AddUser, GetUser, UserDAOImpl}
 import models.User
 import play.api.libs.json.JsValue
+import util.Constants.UNDEFINED
 import utils.Security
 
 import scala.concurrent.Future
@@ -23,8 +24,6 @@ class AuthorizationActor extends Actor with ActorLogging {
   import context.dispatcher
 
   implicit val userOperationTimeout = new Timeout(Duration.create(3, TimeUnit.SECONDS))
-
-  val UNDEFINED = "undefined"
 
   override def receive = {
     case msg: JsValue =>
@@ -91,6 +90,10 @@ class AuthorizationActor extends Actor with ActorLogging {
         }
       case _ =>
         Unauthorized(s"User with email: [$email] is not registered", email = email)
+    }.recover {
+      case e: Exception =>
+        log.error(e, "Unable to check user by email: [{}] and password: [{}]", email, password)
+        Unauthorized(s"Internal server error", email = email)
     }
   }
 
@@ -105,6 +108,11 @@ class AuthorizationActor extends Actor with ActorLogging {
         Authorized(s"Client with email: [$email] and password: [$password] has been registered", email, sessionId)
       case _ =>
         Unauthorized("Client has not been registered", email = email)
+    }.recover {
+      case e: Exception =>
+        log.error(e, "Unable to register user with email: [{}], password: [{}], product id: [{}] and product secret: [{}]",
+          email, password, productId, productSecret)
+        Unauthorized(s"Internal server error", email = email)
     }
   }
 }

@@ -22,7 +22,7 @@ define(['backbone', 'jquery', 'underscore', 'text!../../template/container.html'
 
                 logout: function() {
                     localStorage.clear();
-                    window.router.navigate("", {trigger: true, replace: true});
+                    window.location = window.location.pathname
                 }
             });
     }

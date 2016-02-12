@@ -1,10 +1,22 @@
 package actors.nest
 
-import java.lang.Iterable
+import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorLogging, Actor}
-import com.firebase.client.{DataSnapshot, ValueEventListener, FirebaseError, Firebase}
-import com.firebase.client.Firebase.AuthListener
+import actors.nest.NestActor.{GENERATE_ACCESS_TOKEN, GENERATE_NEST_LINK}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.pattern.ask
+import akka.util.Timeout
+import com.firebase.client.{DataSnapshot, Firebase}
+import dao.{GetUser, UserDAOImpl}
+import models.User
+import org.apache.http.HttpStatus
+import play.api.libs.json.{JsValue, Json}
+import play.api.libs.ws.WS
+import play.api.libs.ws.ning.NingWSClient
+import util.Constants.UNDEFINED
+import utils.Security
+
+import scala.concurrent.duration.Duration
 
 /**
   * Created with IntelliJ IDEA.
@@ -12,39 +24,57 @@ import com.firebase.client.Firebase.AuthListener
   * Date: 2/9/2016
   * Time: 10:54 AM
   */
-class NestActor(nestToken: String, firebaseUrl: String) extends Actor with ActorLogging {
+class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
 
   val fireBase = new Firebase(firebaseUrl)
 
-  fireBase.auth(nestToken, new AuthListener {
+  import context.dispatcher
 
-    def onAuthError(e: FirebaseError) {
-      log.error(e.toException, "Firebase authentication error")
-    }
+  implicit val userOperationTimeout = new Timeout(Duration.create(3, TimeUnit.SECONDS))
 
-    def onAuthSuccess(a: AnyRef) {
-      log.info("Firebase successfully authenticated. {}", a)
-      // when we've successfully authed, add a change listener to the whole tree
-      fireBase.addValueEventListener(new ValueEventListener {
-        def onDataChange(snapshot: DataSnapshot) {
-          // when data changes we send our receive block an update
-          self ! snapshot
-        }
-        def onCancelled(err: FirebaseError) {
-          // on an err we should just bail out
-          self ! err
-        }
-      })
-    }
-
-    def onAuthRevoked(e: FirebaseError) {
-      log.error(e.toException, "Firebase authentication revoked")
-    }
-  })
-
+  //  fireBase.auth(nestToken, new AuthListener {
+  //
+  //    def onAuthError(e: FirebaseError) {
+  //      log.error(e.toException, "Firebase authentication error")
+  //    }
+  //
+  //    def onAuthSuccess(a: AnyRef) {
+  //      log.info("Firebase successfully authenticated. {}", a)
+  //      // when we've successfully authed, add a change listener to the whole tree
+  //      fireBase.addValueEventListener(new ValueEventListener {
+  //        def onDataChange(snapshot: DataSnapshot) {
+  //          // when data changes we send our receive block an update
+  //          self ! snapshot
+  //        }
+  //
+  //        def onCancelled(err: FirebaseError) {
+  //          // on an err we should just bail out
+  //          self ! err
+  //        }
+  //      })
+  //    }
+  //
+  //    def onAuthRevoked(e: FirebaseError) {
+  //      log.error(e.toException, "Firebase authentication revoked")
+  //    }
+  //  })
 
   override def receive: Receive = {
+    case (msg: JsValue, sessionId: String, out: ActorRef) =>
+      val action: String = (msg \ "action").asOpt[String].getOrElse(UNDEFINED)
+      val emailSignature: String = (msg \ "email").asOpt[String].getOrElse(UNDEFINED)
+      val email = Security.getValue(emailSignature, "email").getOrElse(UNDEFINED)
+      val code: String = (msg \ "code").asOpt[String].getOrElse(UNDEFINED)
+      if (email == UNDEFINED) {
+        log.error("Client's blocked. Client's email is not valid. Email signature: {}. Session id: {}", emailSignature, sessionId)
+        out ! Json.obj("message" -> "Forbidden", "email" -> email, "status" -> HttpStatus.SC_FORBIDDEN)
+      } else {
+        val accessHandler = generateNestLink(sessionId, email, out) orElse generateAccessToken(sessionId, email, code, out)
+        accessHandler(action)
+      }
+  }
 
+  def handleSnapshots: Receive = {
     case snapshot: DataSnapshot =>
       import scala.collection.JavaConversions._
       val cameras = snapshot.child("devices").child("cameras")
@@ -61,4 +91,68 @@ class NestActor(nestToken: String, firebaseUrl: String) extends Actor with Actor
       }
       log.info("Data snapshot has been received from firebase: {}", snapshot)
   }
+
+  def generateNestLink(sessionId: String, email: String, out: ActorRef): Receive = {
+    case GENERATE_NEST_LINK =>
+      getUser(email).map {
+        case Some(user: User) =>
+          out ! Json.obj("message" -> "OK", "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK,
+            "nest_link" -> s"https://home.nest.com/login/oauth2?client_id=${user.productId}&state=STATE",
+            "action" -> GENERATE_NEST_LINK)
+      }.recover {
+        case e: Exception =>
+          log.error(e, "Unable to get user by email: [{}]. Session id: [{}], action: [{}]", email, sessionId, GENERATE_NEST_LINK)
+          out ! Json.obj("message" -> "Internal server error. ${e.getMessage}", "sessionId" -> sessionId,
+            "status" -> HttpStatus.SC_INTERNAL_SERVER_ERROR, "action" -> GENERATE_NEST_LINK)
+      }
+  }
+
+  def generateAccessToken(sessionId: String, email: String, code: String, out: ActorRef): Receive = {
+    case GENERATE_ACCESS_TOKEN =>
+      if (code == UNDEFINED) {
+        log.error("Client's nest code is empty. Email: [{}]. Session id: [{}], action: [{}]", email, sessionId, GENERATE_ACCESS_TOKEN)
+        out ! Json.obj("message" -> "Bad nest code. Please try again.", "email" -> email, "status" -> HttpStatus.SC_BAD_REQUEST,
+          "action" -> GENERATE_ACCESS_TOKEN)
+      } else {
+        getUser(email).map {
+          case Some(user: User) =>
+            implicit val sslClient = NingWSClient()
+            val body = Map(
+              "client_id" -> Seq(user.productId),
+              "code" -> Seq(code),
+              "client_secret" -> Seq(user.productSecret),
+              "grant_type" -> Seq("authorization_code")
+            )
+            WS.clientUrl("https://api.home.nest.com/oauth2/access_token").post(body)
+              .map { wsResponse =>
+                sslClient.close()
+                println(wsResponse.body)
+                out ! Json.obj("message" -> "OK", "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK,
+                  "action" -> GENERATE_ACCESS_TOKEN)
+              }.recover {
+              case e: Exception =>
+                sslClient.close()
+                log.error(e, "Unable to get nest security token for email: [{}]. Session id: [{}], action: [{}], " +
+                  "nest code: [{}]", email, sessionId, GENERATE_ACCESS_TOKEN, code)
+                out ! Json.obj("message" -> s"Internal server error. ${e.getMessage}", "sessionId" -> sessionId,
+                  "status" -> HttpStatus.SC_INTERNAL_SERVER_ERROR, "action" -> GENERATE_ACCESS_TOKEN)
+            }
+        }.recover {
+          case e: Exception =>
+            log.error(e, "Unable to get user by email: [{}]. Session id: [{}], action: [{}], nest code: [{}]", email, sessionId, GENERATE_ACCESS_TOKEN, code)
+            out ! Json.obj("message" -> "Internal server error. ${e.getMessage}", "sessionId" -> sessionId,
+              "status" -> HttpStatus.SC_INTERNAL_SERVER_ERROR, "action" -> GENERATE_ACCESS_TOKEN)
+        }
+      }
+  }
+
+  def getUser(email: String) = {
+    val userDao: ActorRef = context.actorOf(Props[UserDAOImpl])
+    userDao ? GetUser(email)
+  }
+}
+
+object NestActor {
+  val GENERATE_ACCESS_TOKEN = "generate_access_token"
+  val GENERATE_NEST_LINK = "generate_nest_link"
 }

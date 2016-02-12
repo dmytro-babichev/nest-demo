@@ -33,6 +33,7 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/containerView', 'view/lo
                     loginModel = new LoginModel({sessionId: sessionId});
                     loginModel.login();
                 } else {
+                    this.basicView.notLoggedMode();
                     loginModel = new LoginModel();
                     var loginView = new LoginView({model: loginModel});
                     this.switchView(loginView, $("#bodyContent"));
@@ -42,7 +43,7 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/containerView', 'view/lo
             main: function() {
                 var mainView = new MainView();
                 this.switchView(mainView, $("#bodyContent"))
-                mainView.init();
+                mainView.activate();
             },
 
             loggedIn: function() {

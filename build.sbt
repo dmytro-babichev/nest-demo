@@ -10,6 +10,7 @@ val h2Version = "1.4.187"
 libraryDependencies ++= Seq(
   cache,
   specs2 % Test,
+  ws,
   "com.typesafe.play" %% "play-slick" % "1.1.1",
   "com.typesafe.play" %% "play-slick-evolutions" % "1.1.1",
   "com.h2database" % "h2" % h2Version,
