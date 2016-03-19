@@ -10,8 +10,12 @@ import play.api.mvc._
 
 class Application @Inject() (config: Configuration) extends Controller {
 
-  def index = Action {
-    Ok(views.html.index()).withSession()
+  def index(code: String) = Action {
+    Ok(views.html.index(code)).withSession()
+  }
+
+  def nestCode(state: String, code: String) = Action {
+    Redirect(routes.Application.index(code)).withSession()
   }
 
   def ws = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>

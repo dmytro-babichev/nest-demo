@@ -13,8 +13,8 @@ import org.apache.http.HttpStatus
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
 import play.api.libs.ws.ning.NingWSClient
-import util.Constants.UNDEFINED
-import utils.Security
+import utils.Constants.UNDEFINED
+import utils.Helpers.{extractSignedValue, extractValue}
 
 import scala.concurrent.duration.Duration
 
@@ -61,12 +61,11 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case (msg: JsValue, sessionId: String, out: ActorRef) =>
-      val action: String = (msg \ "action").asOpt[String].getOrElse(UNDEFINED)
-      val emailSignature: String = (msg \ "email").asOpt[String].getOrElse(UNDEFINED)
-      val email = Security.getValue(emailSignature, "email").getOrElse(UNDEFINED)
-      val code: String = (msg \ "code").asOpt[String].getOrElse(UNDEFINED)
+      val action = extractValue(msg, "action")
+      val email = extractSignedValue(msg, "email")
+      val code = extractSignedValue(msg, "code")
       if (email == UNDEFINED) {
-        log.error("Client's blocked. Client's email is not valid. Email signature: {}. Session id: {}", emailSignature, sessionId)
+        log.error("Client's blocked. Client's email is not valid. Email signature: {}. Session id: {}", extractValue(msg, "email"), sessionId)
         out ! Json.obj("message" -> "Forbidden", "email" -> email, "status" -> HttpStatus.SC_FORBIDDEN)
       } else {
         val accessHandler = generateNestLink(sessionId, email, out) orElse generateAccessToken(sessionId, email, code, out)
@@ -126,7 +125,7 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
             WS.clientUrl("https://api.home.nest.com/oauth2/access_token").post(body)
               .map { wsResponse =>
                 sslClient.close()
-                println(wsResponse.body)
+                log.info("Request from nest: {}", wsResponse.body)
                 out ! Json.obj("message" -> "OK", "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK,
                   "action" -> GENERATE_ACCESS_TOKEN)
               }.recover {
@@ -147,7 +146,7 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
   }
 
   def getUser(email: String) = {
-    val userDao: ActorRef = context.actorOf(Props[UserDAOImpl])
+    val userDao = context.actorOf(UserDAOImpl.props)
     userDao ? GetUser(email)
   }
 }
@@ -155,4 +154,6 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
 object NestActor {
   val GENERATE_ACCESS_TOKEN = "generate_access_token"
   val GENERATE_NEST_LINK = "generate_nest_link"
+
+  def props(firebaseUrl: String) = Props(new NestActor(firebaseUrl))
 }

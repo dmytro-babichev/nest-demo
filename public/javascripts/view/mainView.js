@@ -26,12 +26,11 @@ define(['backbone', 'jquery', 'underscore', 'text!../../template/main.html'],
             },
 
             activate: function() {
-                if (localStorage.getItem("code") === undefined || localStorage.getItem("code") === null) {
-                    console.log("cx")
+                if (!isDefined(nestCode) || sessionValue(nestCode) === "") {
                     window.ws.sendMessage({action: "generate_nest_link", email: localStorage.getItem("email"), actionType: "nest_operation"});
                 } else {
                     window.ws.sendMessage({action: "generate_access_token", email: localStorage.getItem("email"),
-                        code: localStorage.getItem("code"), actionType: "nest_operation"});
+                        code: nestCode, actionType: "nest_operation"});
                 }
             }
         });

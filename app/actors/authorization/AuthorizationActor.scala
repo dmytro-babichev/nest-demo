@@ -8,7 +8,7 @@ import akka.util.Timeout
 import dao.{AddUser, GetUser, UserDAOImpl}
 import models.User
 import play.api.libs.json.JsValue
-import util.Constants.UNDEFINED
+import utils.Constants.UNDEFINED
 import utils.Security
 
 import scala.concurrent.Future
@@ -77,7 +77,7 @@ class AuthorizationActor extends Actor with ActorLogging {
 
   def checkUser(email: String, password: String) = {
     log.info("Client tries to log in with email: [{}] and password: [{}]", email, password)
-    val userDao = context.actorOf(Props[UserDAOImpl])
+    val userDao = context.actorOf(UserDAOImpl.props)
     val futureUser = userDao ? GetUser(email)
     futureUser.map {
       case Some(user: User) =>
@@ -99,7 +99,7 @@ class AuthorizationActor extends Actor with ActorLogging {
 
   def registerUser(email: String, password: String, productId: String, productSecret: String) = {
     log.info("Client tries to register with email: [{}] and password: [{}]", email, password)
-    val userDao = context.actorOf(Props[UserDAOImpl])
+    val userDao = context.actorOf(UserDAOImpl.props)
     val futureUser = userDao ? AddUser(email, password, productId, productSecret)
     futureUser.map {
       case Some(user: User) =>
@@ -115,4 +115,8 @@ class AuthorizationActor extends Actor with ActorLogging {
         Unauthorized(s"Internal server error", email = email)
     }
   }
+}
+
+object AuthorizationActor {
+  def props = Props[AuthorizationActor]
 }

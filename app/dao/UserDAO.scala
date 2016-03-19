@@ -1,6 +1,6 @@
 package dao
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.pipe
 import dao.UserDAOImpl.users
 import models.{User, Users}
@@ -67,6 +67,8 @@ class UserDAOImpl extends Actor with UserDAO with ActorLogging {
 }
 
 object UserDAOImpl {
+  def props = Props[UserDAOImpl]
+
   val dbConfig = DatabaseConfigProvider.get[JdbcProfile](Play.current)
 
   val users = TableQuery[Users]

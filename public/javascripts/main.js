@@ -28,22 +28,35 @@ require(['jquery', 'backbone', 'router/router', 'ws/ws', 'ws/handler/authorizati
     window.ws.addHandler(AuthorizationHandler);
     window.router = new Router();
     Backbone.history.start({hashChange: true});
-
-    window.showErrorMessage = function(msg) {
-        showMessage($("div.alert-danger"), msg);
-    };
-
-    window.showSuccessMessage = function(msg) {
-        showMessage($("div.alert-success"), msg);
-    };
-
-    function showMessage(element, msg) {
-        if (msg !== undefined && msg !== null) {
-            element.show().find("span.msgText").text(msg);
-            setTimeout(function() {
-                element.fadeOut('fast');
-            }, 5000);
-        }
-    }
-
 });
+
+// global functions
+function showErrorMessage(msg) {
+    showMessage($("div.alert-danger"), msg);
+};
+
+function showSuccessMessage(msg) {
+    showMessage($("div.alert-success"), msg);
+};
+
+function showMessage(element, msg) {
+    if (msg !== undefined && msg !== null) {
+        element.show().find("span.msgText").text(msg);
+        setTimeout(function() {
+            element.fadeOut('fast');
+        }, 5000);
+    }
+}
+
+function sessionValue(value) {
+    if (value === null || value === undefined) {
+        return "";
+    } else {
+        var split = value.split("=");
+        return split.length > 1 ? split[1] : value;
+    }
+}
+
+function isDefined(value) {
+    return value !== null && value !== undefined;
+}

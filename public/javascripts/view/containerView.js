@@ -13,7 +13,7 @@ define(['backbone', 'jquery', 'underscore', 'text!../../template/container.html'
                 },
 
                 loggedMode: function() {
-                    $(".navbar > .container-fluid").html(_.template(navbarLoggedMode)({email: localStorage.getItem("email")}));
+                    $(".navbar > .container-fluid").html(_.template(navbarLoggedMode)({email: window.sessionValue(localStorage.getItem("email"))}));
                 },
 
                 notLoggedMode: function() {

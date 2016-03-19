@@ -8,8 +8,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.apache.http.HttpStatus
 import play.api.Configuration
 import play.api.libs.json.{JsValue, Json}
+import utils.Constants.UNDEFINED
 import utils.Security
-import util.Constants.UNDEFINED
 
 /**
   * Created with IntelliJ IDEA.
@@ -23,8 +23,8 @@ class WebSocketActor(out: ActorRef, conf: Configuration) extends Actor with Acto
     actionType match {
       case NEST_OPERATION =>
         val firebaseUrl = conf.getString("firebaseUrl").getOrElse(defaultFirebaseUrl)
-        val nestActor = context.actorOf(Props(new NestActor(firebaseUrl)))
-        nestActor ! (initialMsg, sessionId, out)
+        val nestActor = context.actorOf(NestActor.props(firebaseUrl))
+        nestActor !(initialMsg, sessionId, out)
       case _ =>
         out ! Json.obj("message" -> "OK", "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK)
     }
@@ -32,7 +32,7 @@ class WebSocketActor(out: ActorRef, conf: Configuration) extends Actor with Acto
 
   def receive = {
     case msg: JsValue =>
-      val authorizationActor = context.actorOf(Props[AuthorizationActor])
+      val authorizationActor = context.actorOf(AuthorizationActor.props)
       authorizationActor ! msg
     case Authorized(message, email, sessionId) =>
       out ! Json.obj("message" -> message, "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK, "email" -> Security.sign("email", email))
