@@ -28,6 +28,7 @@ define(['underscore'], function(_) {
                 var receivedMsg = JSON.parse(evt.data);
                 console.log("WS. Received message: ", receivedMsg);
                 _.find(handlers, function(handler) {
+                    console.log("Handling by: " + handler.name)
                     return !handler.handle(receivedMsg);
                 });
             };

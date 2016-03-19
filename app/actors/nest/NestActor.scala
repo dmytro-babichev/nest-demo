@@ -124,18 +124,18 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
             )
             WS.clientUrl("https://api.home.nest.com/oauth2/access_token").post(body)
               .map { wsResponse =>
-                sslClient.close()
                 log.info("Request from nest: {}", wsResponse.body)
                 out ! Json.obj("message" -> "OK", "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK,
                   "action" -> GENERATE_ACCESS_TOKEN)
-              }.recover {
-              case e: Exception =>
-                sslClient.close()
-                log.error(e, "Unable to get nest security token for email: [{}]. Session id: [{}], action: [{}], " +
-                  "nest code: [{}]", email, sessionId, GENERATE_ACCESS_TOKEN, code)
-                out ! Json.obj("message" -> s"Internal server error. ${e.getMessage}", "sessionId" -> sessionId,
-                  "status" -> HttpStatus.SC_INTERNAL_SERVER_ERROR, "action" -> GENERATE_ACCESS_TOKEN)
-            }
+              }
+              .recover {
+                case e: Exception =>
+                  log.error(e, "Unable to get nest security token for email: [{}]. Session id: [{}], action: [{}], " +
+                    "nest code: [{}]", email, sessionId, GENERATE_ACCESS_TOKEN, code)
+                  out ! Json.obj("message" -> s"Internal server error. ${e.getMessage}", "sessionId" -> sessionId,
+                    "status" -> HttpStatus.SC_INTERNAL_SERVER_ERROR, "action" -> GENERATE_ACCESS_TOKEN)
+              }
+              .onComplete(_ => sslClient.close())
         }.recover {
           case e: Exception =>
             log.error(e, "Unable to get user by email: [{}]. Session id: [{}], action: [{}], nest code: [{}]", email, sessionId, GENERATE_ACCESS_TOKEN, code)

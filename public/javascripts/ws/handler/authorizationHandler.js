@@ -1,25 +1,11 @@
 define([], function () {
 
-    function getUrlVar(name) {
-        var vars = [], hash;
-        var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-        for (var i = 0; i < hashes.length; i++) {
-            hash = hashes[i].split('=');
-            vars.push(hash[0]);
-            vars[hash[0]] = hash[1];
-        }
-        var urlVar = vars[name];
-        return urlVar !== undefined && urlVar !== null ? urlVar.split("#")[0] : urlVar;
-    }
-
     return {
         handle: function(response) {
-            if (response.status === 200 && response.sessionId !== undefined && response.sessionId !== null) {
+            if (response.status === 200 && isDefined(response.sessionId)) {
                 window.showSuccessMessage(response.message);
                 localStorage.setItem("sessionId", response.sessionId);
-                if (response.email !== undefined && response.email !== null) localStorage.setItem("email", response.email);
-                var nestCodeValue = getUrlVar("code");
-                if (nestCodeValue !== undefined && nestCodeValue !== null) localStorage.setItem("code", nestCodeValue);
+                if (isDefined(response.email)) localStorage.setItem("email", response.email);
                 window.router.navigate("main", {trigger: true, replace: true});
                 return true;
             } else {
