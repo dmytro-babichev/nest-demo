@@ -10,12 +10,16 @@ import Constants.UNDEFINED
   * Time: 9:16 PM
   */
 object Helpers {
-  def extractValue(msg: JsValue, key: String): String = {
+  def extractStrValue(msg: JsValue, key: String): String = {
     (msg \ key).asOpt[String].getOrElse(UNDEFINED)
   }
 
+  def extractLongValue(msg: JsValue, key: String): Long = {
+    (msg \ key).asOpt[Long].getOrElse(-1)
+  }
+
   def extractSignedValue(msg: JsValue, key: String): String = {
-    val value = extractValue(msg, key)
+    val value = extractStrValue(msg, key)
     Security.getValue(value, key).getOrElse(UNDEFINED)
   }
 }

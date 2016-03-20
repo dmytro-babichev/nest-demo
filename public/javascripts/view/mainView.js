@@ -35,7 +35,7 @@ define(['backbone', 'jquery', 'underscore', 'text!../../template/main.html', "ws
             },
 
             showContainer: function(container) {
-                this.$el.find(".row").hide();
+                this.$el.find(".main-container").hide();
                 this.$el.find(container).show();
             }
         });

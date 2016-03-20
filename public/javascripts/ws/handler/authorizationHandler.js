@@ -7,8 +7,10 @@ define([], function () {
                 localStorage.setItem("sessionId", response.sessionId);
                 if (isDefined(response.email)) localStorage.setItem("email", response.email);
                 window.router.navigate("main", {trigger: true, replace: true});
+                console.log("Action is authorized")
                 return true;
             } else {
+                console.log("Authorization error")
                 window.showErrorMessage(response.message);
                 localStorage.clear();
                 window.router.navigate("", {trigger: false, replace: true});

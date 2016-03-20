@@ -11,10 +11,10 @@ import dao.{GetUser, UserDAOImpl}
 import models.User
 import org.apache.http.HttpStatus
 import play.api.libs.json.{JsValue, Json}
-import play.api.libs.ws.WS
 import play.api.libs.ws.ning.NingWSClient
+import play.api.libs.ws.{WS, WSResponse}
 import utils.Constants.UNDEFINED
-import utils.Helpers.{extractSignedValue, extractValue}
+import utils.Helpers.{extractSignedValue, extractStrValue, extractLongValue}
 
 import scala.concurrent.duration.Duration
 
@@ -61,14 +61,14 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case (msg: JsValue, sessionId: String, out: ActorRef) =>
-      val action = extractValue(msg, "action")
+      val action = extractStrValue(msg, "action")
       val email = extractSignedValue(msg, "email")
       val code = extractSignedValue(msg, "code")
       if (email == UNDEFINED) {
-        log.error("Client's blocked. Client's email is not valid. Email signature: {}. Session id: {}", extractValue(msg, "email"), sessionId)
+        log.error("Client's blocked. Client's email is not valid. Email signature: {}. Session id: {}", extractStrValue(msg, "email"), sessionId)
         out ! Json.obj("message" -> "Forbidden", "email" -> email, "status" -> HttpStatus.SC_FORBIDDEN)
       } else {
-        val accessHandler = generateNestLink(sessionId, email, out) orElse generateAccessToken(sessionId, email, code, out)
+        val accessHandler = generateNestLink(email, sessionId, out) orElse generateAccessToken(email, code, sessionId, out)
         accessHandler(action)
       }
   }
@@ -91,7 +91,7 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
       log.info("Data snapshot has been received from firebase: {}", snapshot)
   }
 
-  def generateNestLink(sessionId: String, email: String, out: ActorRef): Receive = {
+  def generateNestLink(email: String, sessionId: String, out: ActorRef): Receive = {
     case GENERATE_NEST_LINK =>
       getUser(email).map {
         case Some(user: User) =>
@@ -106,7 +106,7 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
       }
   }
 
-  def generateAccessToken(sessionId: String, email: String, code: String, out: ActorRef): Receive = {
+  def generateAccessToken(email: String, code: String, sessionId: String, out: ActorRef): Receive = {
     case GENERATE_ACCESS_TOKEN =>
       if (code == UNDEFINED) {
         log.error("Client's nest code is empty. Email: [{}]. Session id: [{}], action: [{}]", email, sessionId, GENERATE_ACCESS_TOKEN)
@@ -124,9 +124,7 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
             )
             WS.clientUrl("https://api.home.nest.com/oauth2/access_token").post(body)
               .map { wsResponse =>
-                log.info("Request from nest: {}", wsResponse.body)
-                out ! Json.obj("message" -> "OK", "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK,
-                  "action" -> GENERATE_ACCESS_TOKEN)
+                handleTokenResponse(wsResponse, email, sessionId, out)
               }
               .recover {
                 case e: Exception =>
@@ -148,6 +146,23 @@ class NestActor(firebaseUrl: String) extends Actor with ActorLogging {
   def getUser(email: String) = {
     val userDao = context.actorOf(UserDAOImpl.props)
     userDao ? GetUser(email)
+  }
+
+  def handleTokenResponse(wsResponse: WSResponse, email: String, sessionId: String, out: ActorRef) = {
+    log.info("Request from nest: {}", wsResponse.body)
+    val responseJson = Json.parse(wsResponse.body)
+    val error: String = extractStrValue(responseJson, "error")
+    if (error != UNDEFINED) {
+      log.error("Unable to get nest security token for user: [{}]. Session id: [{}]", email, sessionId)
+      val errorDescription = extractStrValue(responseJson, "error_description")
+      out ! Json.obj("message" -> errorDescription, "sessionId" -> sessionId, "status" -> HttpStatus.SC_FORBIDDEN,
+        "action" -> GENERATE_ACCESS_TOKEN)
+    } else {
+      val accessToken = extractStrValue(responseJson, "access_token")
+      val expiresIn = TimeUnit.MILLISECONDS.toMinutes(extractLongValue(responseJson, "expires_in"))
+      out ! Json.obj("message" -> "OK", "sessionId" -> sessionId, "status" -> HttpStatus.SC_OK,
+        "action" -> GENERATE_ACCESS_TOKEN, "accessToken" -> accessToken, "expiresIn" -> expiresIn)
+    }
   }
 }
 
