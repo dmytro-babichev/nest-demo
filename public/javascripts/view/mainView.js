@@ -12,7 +12,7 @@ define(['backbone', 'jquery', 'underscore', 'text!../../template/main.html', "ws
             },
 
             render: function() {
-                this.$el.html(this.template(this.model));
+                this.$el.html(this.template(this.model.toJSON()));
                 return this;
             },
 
@@ -30,13 +30,14 @@ define(['backbone', 'jquery', 'underscore', 'text!../../template/main.html', "ws
                 this.showContainer(".nest-link-container");
             },
 
-            webCamMode: function() {
-                this.showContainer(".web-cam-container");
+            webCamMode: function(data) {
+                this.model.set({accessToken: data["accessToken"], expiresIn: data["expiresIn"]});
+                this.render().showContainer(".web-cam-container");
             },
 
             showContainer: function(container) {
                 this.$el.find(".main-container").hide();
-                this.$el.find(container).show();
+                return this.$el.find(container).show();
             }
         });
     }

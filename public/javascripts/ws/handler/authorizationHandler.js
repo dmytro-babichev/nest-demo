@@ -12,9 +12,7 @@ define([], function () {
             } else {
                 console.log("Authorization error")
                 window.showErrorMessage(response.message);
-                localStorage.clear();
-                window.router.navigate("", {trigger: false, replace: true});
-                window.router.login();
+                window.router.basicView.logout();
                 return false;
             }
         },

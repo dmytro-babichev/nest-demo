@@ -6,7 +6,7 @@ define([], function () {
                 if (response.action === "generate_nest_link") {
                     view.generateAccessTokenMode(response["nest_link"]);
                 } else if (response.action === "generate_access_token") {
-                    view.webCamMode();
+                    view.webCamMode(response);
                 }
                 return true;
             },

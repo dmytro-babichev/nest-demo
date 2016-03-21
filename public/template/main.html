@@ -3,4 +3,20 @@
 </div>
 <div class="row main-container web-cam-container" style="display: none;">
     <div class="col-md-12">We are ready for using nest API</div>
+    <div class="col-md-12">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Access token</th>
+                    <th>Expires in</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><%= (isDefined(accessToken) ? accessToken : "") %></td>
+                    <td><%= (isDefined(expiresIn) ? expiresIn : "") %></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>

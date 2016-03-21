@@ -41,7 +41,7 @@ define(['backbone', 'jquery', 'model/loginModel', 'view/containerView', 'view/lo
             },
 
             main: function() {
-                var mainView = new MainView();
+                var mainView = new MainView({model: new Backbone.Model({accessToken: "", expiresIn: ""})});
                 this.switchView(mainView, $("#bodyContent"))
                 mainView.activate();
             },
